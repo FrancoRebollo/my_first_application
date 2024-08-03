@@ -11,7 +11,12 @@ func main() {
 		log.Fatalf("Error loading .env file")
 	}
 
-	API := NewAPIServer(":3000")
+	store, err := NewPostgresStore()
+	if err != nil {
+		log.Fatalf("Unable to open connection for the database")
+	}
+
+	API := NewAPIServer(":3000", store)
 
 	API.Run()
 

@@ -16,8 +16,7 @@ type UserSignUp struct {
 }
 
 type User struct {
-	userID      int    `json:userID`
-	userName    string `json:userName`
-	userEmail   string `json:userEmail`
-	userProfile string `json:userProfile`
+	userID    int    `json:userID`
+	userName  string `json:userName`
+	userEmail string `json:userEmail`
 }

@@ -34,11 +34,13 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 
 type APIServer struct {
 	listenAddr string
+	store      Storage
 }
 
-func NewAPIServer(listenAddr string) *APIServer {
+func NewAPIServer(listenAddr string, store Storage) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
+		store:      store,
 	}
 }
 
@@ -57,7 +59,7 @@ func (s *APIServer) Run() {
 func (s *APIServer) handleUser(w http.ResponseWriter, r *http.Request) error {
 
 	if r.Method == "GET" {
-		if r.URL.Path == "/sign-up" {
+		if r.URL.Path == "/sign-in" {
 			return s.handleLoginUser(w, r)
 		}
 	}
@@ -75,7 +77,10 @@ func (s *APIServer) handleSingUpUser(w http.ResponseWriter, r *http.Request) err
 	if err := s.createUser(w, r); err != nil {
 		return err
 	}
-	return WriteJSON(w, http.StatusOK, ApiResponse{Status: "Signed up"})
+
+	WriteJSON(w, http.StatusOK, ApiResponse{Status: "Signed up"})
+
+	return nil
 }
 
 func (s *APIServer) handleLoginUser(w http.ResponseWriter, r *http.Request) error {
