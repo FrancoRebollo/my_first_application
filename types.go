@@ -1,22 +1,22 @@
 package main
 
-import "time"
-
 type UserLogin struct {
-	userName     string `json:userName`
-	userPassword string `json:userPassword`
+	UserName     string `json:userName`
+	UserPassword string `json:userPassword`
 }
 
 type UserSignUp struct {
-	userName         string    `json:userName`
-	userEmail        string    `json:userEmail`
-	userPassword     string    `json:userPassword`
-	userPersonalID   string    `json:userPersonalID`
-	userBirthdayDate time.Time `json:userBirthdayDate`
+	UserFirstName    string `json:userFirstName`
+	UserLastName     string `json:userLastName`
+	UserName         string `json:userName`
+	UserEmail        string `json:userEmail`
+	UserPassword     string `json:userPassword`
+	UserPersonalID   string `json:userPersonalID`
+	UserBirthdayDate string `json:userBirthdayDate`
 }
 
 type User struct {
-	userID    int    `json:userID`
-	userName  string `json:userName`
-	userEmail string `json:userEmail`
+	UserID    int    `json:userID`
+	UserName  string `json:userName`
+	UserEmail string `json:userEmail`
 }

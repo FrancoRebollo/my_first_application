@@ -4,16 +4,16 @@ import "fmt"
 
 func userSingUpValidation(typeValidate UserSignUp) error {
 
-	if typeValidate.userName == "" {
+	if typeValidate.UserName == "" {
 		return fmt.Errorf("you have to provide an username")
 	}
-	if typeValidate.userEmail == "" {
+	if typeValidate.UserEmail == "" {
 		return fmt.Errorf("you have to provide an email")
 	}
-	if typeValidate.userPassword == "" {
+	if typeValidate.UserPassword == "" {
 		return fmt.Errorf("you have to provide a password")
 	}
-	if typeValidate.userPersonalID == "" {
+	if typeValidate.UserPersonalID == "" {
 		return fmt.Errorf("you have to provide your personal ID")
 	}
 

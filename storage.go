@@ -40,7 +40,7 @@ func NewPostgresStore() (*PostgresStore, error) {
 	if err != nil {
 		log.Fatalf("Error connecting to Postgre database: %v", err)
 	}
-	defer db.Close()
+	//defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
@@ -55,18 +55,24 @@ func NewPostgresStore() (*PostgresStore, error) {
 }
 
 func (s *PostgresStore) UserSignUp(userSignUp UserSignUp) error {
-	_, err := s.UserGetByUserName(userSignUp.userName)
-
-	if err == nil {
+	// Verify the username is not already taken
+	existingUser, err := s.UserGetByUserName(userSignUp.UserName)
+	if err != nil {
+		return fmt.Errorf("error checking username: %v", err)
+	}
+	if existingUser != nil {
 		return fmt.Errorf("you have to choose another username")
 	}
-	_, err = s.UserGetByUserName(userSignUp.userPersonalID)
+	existingUser, err = s.UserGetByPersonalID(userSignUp.UserPersonalID)
 
-	if err == nil {
+	if err != nil {
+		return fmt.Errorf("error checking personal identification: %v", err)
+	}
+	if existingUser != nil {
 		return fmt.Errorf("personal identification already taken by another person")
 	}
 
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(userSignUp.userPassword), bcrypt.DefaultCost)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(userSignUp.UserPassword), bcrypt.DefaultCost)
 	encryptedPassword, err := encrypt(string(hashedPassword), os.Getenv("SEED_ENCRIPTATION"))
 
 	if err != nil {
@@ -74,15 +80,20 @@ func (s *PostgresStore) UserSignUp(userSignUp UserSignUp) error {
 	}
 
 	sqlStatement := `
-		INSERT INTO USERS (US_EMAIL,US_USERNAME,US_HASH,US_PERSONAL_ID,US_BIRTHDAY_DATE,US_CREATE_DATETIME,US_CREATE_USER)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
+		INSERT INTO USERS (US_FIRST_NAME,US_LAST_NAME,US_EMAIL,US_USERNAME,US_HASH,US_PERSONAL_ID,US_BIRTHDAY_DATE,US_CREATE_DATETIME,US_CREATE_USER)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`
 
-	_, err = s.db.Exec(sqlStatement, userSignUp.userEmail, userSignUp.userName, encryptedPassword, userSignUp.userPersonalID, userSignUp.userBirthdayDate, time.Now(), "API_USER")
+	birthdayDate, err := time.Parse("02-01-2006", userSignUp.UserBirthdayDate)
+	if err != nil {
+		return fmt.Errorf("error parsing birthday date")
+	}
+
+	_, err = s.db.Exec(sqlStatement, userSignUp.UserFirstName, userSignUp.UserLastName,
+		userSignUp.UserEmail, userSignUp.UserName, encryptedPassword, userSignUp.UserPersonalID, birthdayDate, time.Now(), "API_USER")
 
 	if err != nil {
 		return err
 	}
-
 	return nil
 
 }
@@ -97,10 +108,14 @@ func (s *PostgresStore) UserGetByUserName(userName string) (*User, error) {
 	query := "SELECT us_id_user, us_username,us_email FROM users WHERE us_username = $1"
 
 	row := s.db.QueryRow(query, userName)
-
-	err := row.Scan(&user.userID, &user.userName, &user.userEmail)
+	err := row.Scan(&user.UserID, &user.UserName, &user.UserEmail)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			// No rows were found, return nil user and no error
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
@@ -114,9 +129,13 @@ func (s *PostgresStore) UserGetByPersonalID(personalID string) (*User, error) {
 
 	row := s.db.QueryRow(query, personalID)
 
-	err := row.Scan(&user.userID, &user.userName, &user.userEmail)
+	err := row.Scan(&user.UserID, &user.UserName, &user.UserEmail)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			// No rows were found, return nil user and no error
+			return nil, nil
+		}
 		return nil, err
 	}
 
