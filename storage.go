@@ -54,6 +54,34 @@ func NewPostgresStore() (*PostgresStore, error) {
 	}, nil
 }
 
+func (s *PostgresStore) UserLogin(userLogin UserLogin) error {
+	var us_encrypted_password string
+	query := "SELECT us_hash FROM users WHERE us_email = $1"
+
+	row := s.db.QueryRow(query, userLogin.UserEmail)
+	err := row.Scan(&us_encrypted_password)
+
+	if err == sql.ErrNoRows {
+		// No rows were found, return nil user and no error
+		return fmt.Errorf("user not found")
+	}
+
+	if err != nil {
+		return err
+	}
+
+	hashedPassword, err := decrypt(string(us_encrypted_password), os.Getenv("SEED_ENCRIPTATION"))
+	if err != nil {
+		return err
+	}
+
+	if err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(userLogin.UserPassword)); err != nil {
+		return fmt.Errorf("the given password doesn't match")
+	}
+
+	return nil
+}
+
 func (s *PostgresStore) UserSignUp(userSignUp UserSignUp) error {
 	// Verify the username is not already taken
 	existingUser, err := s.UserGetByUserName(userSignUp.UserName)
@@ -70,6 +98,15 @@ func (s *PostgresStore) UserSignUp(userSignUp UserSignUp) error {
 	}
 	if existingUser != nil {
 		return fmt.Errorf("personal identification already taken by another person")
+	}
+
+	existingUser, err = s.UserGetByEmail(userSignUp.UserEmail)
+
+	if err != nil {
+		return fmt.Errorf("error checking user by email: %v", err)
+	}
+	if existingUser != nil {
+		return fmt.Errorf("email already taken by another person")
 	}
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(userSignUp.UserPassword), bcrypt.DefaultCost)
@@ -98,10 +135,6 @@ func (s *PostgresStore) UserSignUp(userSignUp UserSignUp) error {
 
 }
 
-func (s *PostgresStore) UserLogin(UserLogin) error {
-	return nil
-}
-
 func (s *PostgresStore) UserGetByUserName(userName string) (*User, error) {
 	user := new(User)
 
@@ -128,6 +161,26 @@ func (s *PostgresStore) UserGetByPersonalID(personalID string) (*User, error) {
 	query := "SELECT us_id_user, us_username,us_email FROM users WHERE us_personal_id = $1"
 
 	row := s.db.QueryRow(query, personalID)
+
+	err := row.Scan(&user.UserID, &user.UserName, &user.UserEmail)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No rows were found, return nil user and no error
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (s *PostgresStore) UserGetByEmail(email string) (*User, error) {
+	user := new(User)
+
+	query := "SELECT us_id_user, us_username,us_email FROM users WHERE us_email = $1"
+
+	row := s.db.QueryRow(query, email)
 
 	err := row.Scan(&user.UserID, &user.UserName, &user.UserEmail)
 

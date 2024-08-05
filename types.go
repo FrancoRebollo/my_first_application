@@ -1,7 +1,7 @@
 package main
 
 type UserLogin struct {
-	UserName     string `json:userName`
+	UserEmail    string `json:userEmail`
 	UserPassword string `json:userPassword`
 }
 

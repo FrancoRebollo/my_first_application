@@ -19,3 +19,15 @@ func userSingUpValidation(typeValidate UserSignUp) error {
 
 	return nil
 }
+
+func userLoginValidation(typeValidate UserLogin) error {
+
+	if typeValidate.UserEmail == "" {
+		return fmt.Errorf("you have to provide your email")
+	}
+	if typeValidate.UserPassword == "" {
+		return fmt.Errorf("you have to provide a password")
+	}
+
+	return nil
+}
