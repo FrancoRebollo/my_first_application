@@ -84,11 +84,14 @@ func (s *APIServer) handleSingUpUser(w http.ResponseWriter, r *http.Request) err
 }
 
 func (s *APIServer) handleLoginUser(w http.ResponseWriter, r *http.Request) error {
-	if err := s.logUser(w, r); err != nil {
+
+	response, err := s.logUser(w, r)
+
+	if err != nil {
 		return err
 	}
 
-	WriteJSON(w, http.StatusOK, ApiResponse{Status: "Logged"})
+	WriteJSON(w, http.StatusOK, response)
 
 	return nil
 }

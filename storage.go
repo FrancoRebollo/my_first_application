@@ -17,6 +17,7 @@ type Storage interface {
 	UserGetByUserName(string) (*User, error)
 	UserGetByPersonalID(string) (*User, error)
 	UserDelete(int) error
+	UserGetByEmail(string) (*User, error)
 }
 
 type PostgresStore struct {
