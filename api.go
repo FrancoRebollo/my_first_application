@@ -47,7 +47,8 @@ func NewAPIServer(listenAddr string, store Storage) *APIServer {
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/sign-up", makeHTTPHandleFunc(s.handleUser))
+	router.HandleFunc("/contact-me", JWTValidationMiddleware(makeHTTPHandleFunc(s.handleUser)))
+	router.HandleFunc("/sign-up", makeHTTPHandleFunc(s.handleUser)) // JWTValidationMiddleware
 	router.HandleFunc("/sign-in", makeHTTPHandleFunc(s.handleUser))
 
 	log.Println("Users microservice is running on PORT: ", s.listenAddr)
@@ -68,6 +69,9 @@ func (s *APIServer) handleUser(w http.ResponseWriter, r *http.Request) error {
 		if r.URL.Path == "/sign-up" {
 			return s.handleSingUpUser(w, r)
 		}
+		if r.URL.Path == "/contact-me" {
+			return s.handleContactMe(w, r)
+		}
 	}
 
 	return nil
@@ -86,12 +90,22 @@ func (s *APIServer) handleSingUpUser(w http.ResponseWriter, r *http.Request) err
 func (s *APIServer) handleLoginUser(w http.ResponseWriter, r *http.Request) error {
 
 	response, err := s.logUser(w, r)
-
 	if err != nil {
 		return err
 	}
 
 	WriteJSON(w, http.StatusOK, response)
+
+	return nil
+}
+
+func (s *APIServer) handleContactMe(w http.ResponseWriter, r *http.Request) error {
+
+	resp := map[string]string{
+		"Message": "A notification has been sent to me, thanks for contact me.",
+	}
+
+	WriteJSON(w, http.StatusOK, resp)
 
 	return nil
 }
