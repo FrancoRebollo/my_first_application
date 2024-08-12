@@ -38,3 +38,14 @@ type JWTRequest struct {
 	JWTToken        string
 	ExpiresAt       time.Time
 }
+
+type NotificationContact struct {
+	NotificationSender string
+	NotificationMssg   string
+}
+
+type JWTCheckRefresh struct {
+	UserEmail    string
+	RefreshToken string
+	IsValidYet   bool
+}

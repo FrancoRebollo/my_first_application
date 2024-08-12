@@ -66,9 +66,26 @@ func (s *APIServer) logUser(w http.ResponseWriter, r *http.Request) (*UserLoginR
 		return nil, err
 	}
 
+	refreshTokenReq, err := NewJWTRequest(userLogin.UserEmail, 1440)
+
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := CreateJWT(refreshTokenReq)
+	if err != nil {
+		return nil, fmt.Errorf("error creating JWT")
+	}
+
+	if err := s.store.UpdateRefreshToken(refreshToken, userResponse.UserEmail); err != nil {
+		return nil, err
+	}
+
 	userLoginRes := &UserLoginRes{
-		AccessToken:          accesToken,
-		AccessTokenExpiresAt: accesTokenReq.ExpiresAt,
+		AccessToken:           accesToken,
+		RefreshToken:          refreshToken,
+		AccessTokenExpiresAt:  accesTokenReq.ExpiresAt,
+		RefreshTokenExpiresAt: refreshTokenReq.ExpiresAt,
 		User: User{
 			UserID:    userResponse.UserID,
 			UserName:  userResponse.UserName,

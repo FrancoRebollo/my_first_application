@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -100,6 +101,15 @@ func (s *APIServer) handleLoginUser(w http.ResponseWriter, r *http.Request) erro
 }
 
 func (s *APIServer) handleContactMe(w http.ResponseWriter, r *http.Request) error {
+
+	checkRefresh, err := s.JWTCheckRefreshToken(&JWTCheckRefresh{UserEmail: r.Context().Value("commonIdentification").(string)})
+	if err != nil {
+		return err
+	}
+
+	if !checkRefresh.IsValidYet {
+		return fmt.Errorf("expired session")
+	}
 
 	resp := map[string]string{
 		"Message": "A notification has been sent to me, thanks for contact me.",

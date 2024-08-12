@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	jwt "github.com/golang-jwt/jwt/v5"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,6 +19,8 @@ type Storage interface {
 	UserGetByPersonalID(string) (*User, error)
 	UserDelete(int) error
 	UserGetByEmail(string) (*User, error)
+	CheckJWTRefreshToken(*JWTCheckRefresh) (*JWTCheckRefresh, error)
+	UpdateRefreshToken(string, string) error
 }
 
 type PostgresStore struct {
@@ -198,4 +201,63 @@ func (s *PostgresStore) UserGetByEmail(email string) (*User, error) {
 
 func (s *PostgresStore) UserDelete(int) error {
 	return nil
+}
+
+func (s *PostgresStore) UpdateRefreshToken(token string, userEmail string) error {
+
+	sqlStatement := `
+	UPDATE USERS SET US_REFRESH_TOKEN = $1 WHERE US_EMAIL = $2`
+
+	_, err := s.db.Exec(sqlStatement, token, userEmail)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *PostgresStore) CheckJWTRefreshToken(a *JWTCheckRefresh) (*JWTCheckRefresh, error) {
+
+	query := "SELECT us_refresh_token FROM users WHERE us_email = $1"
+	row := s.db.QueryRow(query, a.UserEmail)
+	err := row.Scan(a.RefreshToken)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, err
+	}
+
+	refreshToken, err := jwt.Parse(a.RefreshToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("SEED_ENCRIPTATION")), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	claims, bool := refreshToken.Claims.(jwt.MapClaims)
+
+	if !bool {
+		return nil, fmt.Errorf("invalid claims")
+	}
+
+	expiration, bool := claims["exp"].(float64)
+
+	if !bool {
+		return nil, fmt.Errorf("imposible to read expiration date from token")
+	}
+
+	expirationTime := time.Unix(int64(expiration), 0)
+
+	if time.Now().After(expirationTime) {
+		a.IsValidYet = false
+	}
+
+	return a, nil
 }

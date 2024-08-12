@@ -90,3 +90,7 @@ func JWTValidationMiddleware(handlerFunc http.HandlerFunc) http.HandlerFunc {
 func RefreshJWTAccess(req JWTRequest) (string, error) {
 	return "", nil
 }
+
+func (s *APIServer) JWTCheckRefreshToken(a *JWTCheckRefresh) (*JWTCheckRefresh, error) {
+	return s.store.CheckJWTRefreshToken(a)
+}
